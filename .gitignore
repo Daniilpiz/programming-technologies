@@ -6,3 +6,6 @@
 *.userosscache
 *.sln.docstates
 .DS_Store
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filter

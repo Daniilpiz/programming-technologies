@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <clocale>
 
 bool isPrime(int n) {
     if (n <= 1) return false;
@@ -18,7 +19,8 @@ void squarePrimes(std::vector<int>& vec) {
 }
 
 int main() {
-    setlocale(LC_ALL, "Russian");
+    // Установить локаль по умолчанию окружения — это корректно работает в разных системах
+    std::setlocale(LC_ALL, "");
 
     std::vector<int> numbers = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 
