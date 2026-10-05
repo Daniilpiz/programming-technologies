@@ -1,6 +1,8 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
+#include <windows.h>
+#include <clocale>
 
 std::vector<int> getUniqueInRange(const std::vector<int>& vec, int minVal, int maxVal) {
     std::vector<int> result;
@@ -17,21 +19,54 @@ std::vector<int> getUniqueInRange(const std::vector<int>& vec, int minVal, int m
 }
 
 int main() {
-    setlocale(LC_ALL, "Russian");
+    // Установить кодировку для Windows консоли
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+    setlocale(LC_ALL, ".UTF8");
 
-    std::vector<int> numbers = { 15, 3, 8, 20, 8, 12, 3, 25, 10, 30, 12 };
-    int minVal = 5;
-    int maxVal = 20;
+    int n;
+    std::cout << "Введите количество элементов вектора: ";
+    std::cin >> n;
 
-    std::cout << "Исходный вектор: ";
-    for (int n : numbers) std::cout << n << " ";
+    if (n <= 0) {
+        std::cout << "Количество должно быть больше нуля!\n";
+        std::cout << "\nНажмите Enter для завершения...";
+        std::cin.ignore();
+        std::cin.get();
+        return 1;
+    }
+
+    std::vector<int> numbers;
+    std::cout << "Введите " << n << " чисел (разделённые пробелами или Enter):\n";
+    for (int i = 0; i < n; ++i) {
+        int num;
+        std::cin >> num;
+        numbers.push_back(num);
+    }
+
+    int minVal, maxVal;
+    std::cout << "\nВведите минимальное значение диапазона: ";
+    std::cin >> minVal;
+    std::cout << "Введите максимальное значение диапазона: ";
+    std::cin >> maxVal;
+
+    std::cout << "\nИсходный вектор: ";
+    for (int num : numbers) std::cout << num << " ";
     std::cout << "\nДиапазон: [" << minVal << ", " << maxVal << "]\n";
 
     std::vector<int> rangeUnique = getUniqueInRange(numbers, minVal, maxVal);
 
-    std::cout << "Уникальные элементы из диапазона: ";
-    for (int n : rangeUnique) std::cout << n << " ";
-    std::cout << "\n";
+    if (rangeUnique.empty()) {
+        std::cout << "Нет элементов в заданном диапазоне!\n";
+    } else {
+        std::cout << "Уникальные элементы из диапазона: ";
+        for (int num : rangeUnique) std::cout << num << " ";
+        std::cout << "\n";
+    }
+
+    std::cout << "\nНажмите Enter для завершения...";
+    std::cin.ignore();
+    std::cin.get();
 
     return 0;
 }

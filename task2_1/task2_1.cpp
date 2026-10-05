@@ -1,8 +1,9 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
 #include <clocale>
+#include <windows.h>
 
 bool isPrime(int n) {
     if (n <= 1) return false;
@@ -19,20 +20,44 @@ void squarePrimes(std::vector<int>& vec) {
 }
 
 int main() {
-    // Установить локаль по умолчанию окружения — это корректно работает в разных системах
-    std::setlocale(LC_ALL, "");
+    // Установить кодировку для Windows консоли
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+    std::setlocale(LC_ALL, ".UTF8");
 
-    std::vector<int> numbers = { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+    int n;
+    std::cout << "Введите количество элементов вектора: ";
+    std::cin >> n;
 
-    std::cout << "Исходный вектор: ";
-    for (int n : numbers) std::cout << n << " ";
+    if (n <= 0) {
+        std::cout << "Количество должно быть больше нуля!\n";
+        std::cout << "\nНажмите Enter для завершения...";
+        std::cin.ignore();
+        std::cin.get();
+        return 1;
+    }
+
+    std::vector<int> numbers;
+    std::cout << "Введите " << n << " чисел (разделённые пробелами или Enter):\n";
+    for (int i = 0; i < n; ++i) {
+        int num;
+        std::cin >> num;
+        numbers.push_back(num);
+    }
+
+    std::cout << "\nИсходный вектор: ";
+    for (int num : numbers) std::cout << num << " ";
     std::cout << "\n";
 
     squarePrimes(numbers);
 
     std::cout << "После возведения простых чисел в квадрат: ";
-    for (int n : numbers) std::cout << n << " ";
+    for (int num : numbers) std::cout << num << " ";
     std::cout << "\n";
+
+    std::cout << "\nНажмите Enter для завершения...";
+    std::cin.ignore();
+    std::cin.get();
 
     return 0;
 }

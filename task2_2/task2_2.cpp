@@ -1,7 +1,9 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <windows.h>
+#include <clocale>
 
 void sortOddAscEvenDesc(std::vector<int>& vec) {
     std::sort(vec.begin(), vec.end(), [](int a, int b) {
@@ -16,19 +18,44 @@ void sortOddAscEvenDesc(std::vector<int>& vec) {
 }
 
 int main() {
-    setlocale(LC_ALL, "Russian");
+    // Установить кодировку для Windows консоли
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+    setlocale(LC_ALL, ".UTF8");
 
-    std::vector<int> numbers = { 4, 7, 2, 9, 3, 8, 1, 6, 5 };
+    int n;
+    std::cout << "Введите количество элементов вектора: ";
+    std::cin >> n;
 
-    std::cout << "Исходный вектор: ";
-    for (int n : numbers) std::cout << n << " ";
+    if (n <= 0) {
+        std::cout << "Количество должно быть больше нуля!\n";
+        std::cout << "\nНажмите Enter для завершения...";
+        std::cin.ignore();
+        std::cin.get();
+        return 1;
+    }
+
+    std::vector<int> numbers;
+    std::cout << "Введите " << n << " чисел (разделённые пробелами или Enter):\n";
+    for (int i = 0; i < n; ++i) {
+        int num;
+        std::cin >> num;
+        numbers.push_back(num);
+    }
+
+    std::cout << "\nИсходный вектор: ";
+    for (int num : numbers) std::cout << num << " ";
     std::cout << "\n";
 
     sortOddAscEvenDesc(numbers);
 
     std::cout << "Отсортированный вектор (нечётные по возр., чётные по убыв.): ";
-    for (int n : numbers) std::cout << n << " ";
+    for (int num : numbers) std::cout << num << " ";
     std::cout << "\n";
+
+    std::cout << "\nНажмите Enter для завершения...";
+    std::cin.ignore();
+    std::cin.get();
 
     return 0;
 }

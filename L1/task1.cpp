@@ -1,148 +1,132 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <map>
-#include <cwctype>
-#include <windows.h> // Использование Win32 API
-#include <fcntl.h>
+#include <cctype>
+#include <clocale>
+#include <algorithm>
+#include <windows.h>
 #include <io.h>
+#include <fcntl.h>
 
-// Надежная конвертация UTF-8 в широкие символы (Юникод) через Win32 API
-std::wstring utf8_to_wstring(const std::string& str) {
-    if (str.empty()) return std::wstring();
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
-    std::wstring wstrTo(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
-    return wstrTo;
-}
-
-// Конвертация Юникода обратно в UTF-8 для записи в файл
-std::string wstring_to_utf8(const std::wstring& wstr) {
-    if (wstr.empty()) return std::string();
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
-    std::string strTo(size_needed, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
-    return strTo;
-}
-
-std::wstring cleanWord(std::wstring word) {
-    std::wstring puncts = L".,!?;:-—–«»\"'()[]…“”";
-
-    while (!word.empty() && (std::iswpunct(word.back()) || puncts.find(word.back()) != std::wstring::npos)) {
-        word.pop_back();
-    }
-    while (!word.empty() && (std::iswpunct(word.front()) || puncts.find(word.front()) != std::wstring::npos)) {
-        word.erase(0, 1);
-    }
-    for (auto& ch : word) {
-        ch = std::towlower(ch);
-    }
-    return word;
+// Кроссплатформная очистка слова от пунктуации
+std::string cleanWord(std::string word) {
+	// Удалить пунктуацию с конца
+	while (!word.empty() && std::ispunct(static_cast<unsigned char>(word.back()))) {
+		word.pop_back();
+	}
+	// Удалить пунктуацию с начала
+	while (!word.empty() && std::ispunct(static_cast<unsigned char>(word.front()))) {
+		word.erase(0, 1);
+	}
+	// Преобразовать в нижний регистр
+	std::transform(word.begin(), word.end(), word.begin(),
+		[](unsigned char c) { return std::tolower(c); });
+	return word;
 }
 
 void processFile(const std::string& filename, const std::string& outputFilenameFirst,
-    const std::string& outputFilenameSecond) {
-    // Читаем входной файл как обычные байты (UTF-8)
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::wcerr << L"Не удалось открыть файл. Проверьте путь!\n";
-        return;
-    }
+	const std::string& outputFilenameSecond) {
 
-    std::map<std::wstring, int> wordCount;
-    std::map<std::wstring, std::vector<int>> wordPositions;
+	std::ifstream file(filename);
+	if (!file.is_open()) {
+		std::cerr << "Не удалось открыть файл. Проверьте путь!\n";
+		return;
+	}
 
-    std::string rawWordUtf8;
-    int pos = 0;
+	std::map<std::string, int> wordCount;
+	std::map<std::string, std::vector<int>> wordPositions;
 
-    // Считываем слова
-    while (file >> rawWordUtf8) {
-        std::wstring rawWord = utf8_to_wstring(rawWordUtf8);
+	std::string rawWord;
+	int pos = 0;
 
-        if (rawWord == L"—" || rawWord == L"-" || rawWord == L"–") continue;
+	// Читаем слова
+	while (file >> rawWord) {
+		// Пропустить служебные символы
+		if (rawWord == "—" || rawWord == "-" || rawWord == "–") continue;
 
-        std::wstring word = cleanWord(rawWord);
-        if (word.empty()) continue;
+		std::string word = cleanWord(rawWord);
+		if (word.empty()) continue;
 
-        wordCount[word]++;
-        wordPositions[word].push_back(pos);
-        pos++;
-    }
+		wordCount[word]++;
+		wordPositions[word].push_back(pos);
+		pos++;
+	}
 
-    // === Вывод в КОНСОЛЬ (с ограничением 30 строк) ===
-    std::wcout << L"=== Подсчет уникальных слов (всего: " << wordCount.size() << L") ===\n";
-    int printLimit = 0;
-    for (const auto& pair : wordCount) {
-        std::wcout << pair.first << L" - " << pair.second << L"\n";
-        if (++printLimit >= 30) {
-            std::wcout << L"... [в консоли показаны только первые 30. Полные списки сохранены в файлах]\n";
-            break;
-        }
-    }
+	// === Вывод в КОНСОЛЬ (с ограничением 30 строк) ===
+	std::cout << "=== Подсчет уникальных слов (всего: " << wordCount.size() << ") ===\n";
+	int printLimit = 0;
+	for (const auto& pair : wordCount) {
+		std::cout << pair.first << " - " << pair.second << "\n";
+		if (++printLimit >= 30) {
+			std::cout << "... [в консоли показаны только первые 30. Полные списки сохранены в файлах]\n";
+			break;
+		}
+	}
 
-    std::wcout << L"\n=== Индексация позиций ===\n";
-    printLimit = 0;
-    for (const auto& pair : wordPositions) {
-        std::wcout << pair.first << L" – ";
-        for (size_t i = 0; i < pair.second.size(); ++i) {
-            std::wcout << pair.second[i] << (i + 1 == pair.second.size() ? L"" : L", ");
-        }
-        std::wcout << L"\n";
-        if (++printLimit >= 30) {
-            std::wcout << L"... [в консоли показаны только первые 30. Полные списки сохранены в файлах]\n";
-            break;
-        }
-    }
+	std::cout << "\n=== Индексация позиций ===\n";
+	printLimit = 0;
+	for (const auto& pair : wordPositions) {
+		std::cout << pair.first << " – ";
+		for (size_t i = 0; i < pair.second.size(); ++i) {
+			std::cout << pair.second[i] << (i + 1 == pair.second.size() ? "" : ", ");
+		}
+		std::cout << "\n";
+		if (++printLimit >= 30) {
+			std::cout << "... [в консоли показаны только первые 30. Полные списки сохранены в файлах]\n";
+			break;
+		}
+	}
 
-    // === Запись ФАЙЛА №1: Подсчет уникальных слов ===
-    std::ofstream outFile1(outputFilenameFirst, std::ios::binary);
-    if (outFile1.is_open()) {
-        outFile1 << "\xEF\xBB\xBF"; // BOM для UTF-8
-        std::wstring buffer1 = L"=== Подсчет уникальных слов (всего: " + std::to_wstring(wordCount.size()) + L") ===\r\n";
-        for (const auto& pair : wordCount) {
-            buffer1 += pair.first + L" - " + std::to_wstring(pair.second) + L"\r\n";
-        }
-        outFile1 << wstring_to_utf8(buffer1);
-        outFile1.close();
-    }
+	// === Запись ФАЙЛА 1: Подсчет уникальных слов ===
+	std::ofstream outFile1(outputFilenameFirst);
+	if (outFile1.is_open()) {
+		outFile1 << "=== Подсчет уникальных слов (всего: " << wordCount.size() << ") ===\n";
+		for (const auto& pair : wordCount) {
+			outFile1 << pair.first << " - " << pair.second << "\n";
+		}
+		outFile1.close();
+	}
 
-    // === Запись ФАЙЛА №2: Индексация позиций слов ===
-    std::ofstream outFile2(outputFilenameSecond, std::ios::binary);
-    if (outFile2.is_open()) {
-        outFile2 << "\xEF\xBB\xBF"; // BOM для UTF-8
-        std::wstring buffer2 = L"=== Индексация позиций слов ===\r\n";
-        for (const auto& pair : wordPositions) {
-            buffer2 += pair.first + L" – ";
-            for (size_t i = 0; i < pair.second.size(); ++i) {
-                buffer2 += std::to_wstring(pair.second[i]);
-                if (i + 1 != pair.second.size()) {
-                    buffer2 += L", ";
-                }
-            }
-            buffer2 += L"\r\n";
-        }
-        outFile2 << wstring_to_utf8(buffer2);
-        outFile2.close();
-    }
+	// === Запись ФАЙЛА 2: Индексация позиций слов ===
+	std::ofstream outFile2(outputFilenameSecond);
+	if (outFile2.is_open()) {
+		outFile2 << "=== Индексация позиций слов ===\n";
+		for (const auto& pair : wordPositions) {
+			outFile2 << pair.first << " – ";
+			for (size_t i = 0; i < pair.second.size(); ++i) {
+				outFile2 << pair.second[i];
+				if (i + 1 != pair.second.size()) {
+					outFile2 << ", ";
+				}
+			}
+			outFile2 << "\n";
+		}
+		outFile2.close();
+	}
 
-    std::wcout << L"\nУспешно! Результаты сохранены в файлы:\n";
-    std::wcout << L" 1. " << utf8_to_wstring(outputFilenameFirst) << L"\n";
-    std::wcout << L" 2. " << utf8_to_wstring(outputFilenameSecond) << L"\n";
+	std::cout << "\nУспешно! Результаты сохранены в файлы:\n";
+	std::cout << " 1. " << outputFilenameFirst << "\n";
+	std::cout << " 2. " << outputFilenameSecond << "\n";
 }
 
 int main() {
-    // Перевод консоли в режим отображения Юникода (UTF-16)
-    _setmode(_fileno(stdout), _O_U8TEXT);
-    _setmode(_fileno(stderr), _O_U8TEXT);
+	// Установить кодировку для Windows консоли
+	SetConsoleCP(65001);
+	SetConsoleOutputCP(65001);
+	std::setlocale(LC_ALL, ".UTF8");
 
-    std::string filename = "war_and_peace.txt";
-    std::string outputFilenameFirst = "output_1.txt";
-    std::string outputFilenameSecond = "output_2.txt";
+	std::string filename = "war_and_peace.txt";
+	std::string outputFilenameFirst = "output_1.txt";
+	std::string outputFilenameSecond = "output_2.txt";
 
-    std::wcout << L"Обработка файла: " << utf8_to_wstring(filename) << L"\n\n";
+	std::cout << "Обработка файла: " << filename << "\n\n";
 
-    processFile(filename, outputFilenameFirst, outputFilenameSecond);
+	processFile(filename, outputFilenameFirst, outputFilenameSecond);
 
-    return 0;
+	std::cout << "\nНажмите Enter для завершения...";
+	std::cin.get();
+
+	return 0;
 }
