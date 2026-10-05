@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  builder:
+    image: l1-builder
+    volumes:
+      - ./output:/output
+    command: sh -c "cp /app/*.exe /output/ && cp /app/*.txt /output/"
+    container_name: l1-builder-extract
